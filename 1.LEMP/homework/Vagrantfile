@@ -1,0 +1,58 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+ 
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+ config.vm.define "controlnode" do |controlnode|
+  controlnode.vm.provider "virtualbox" do |vb|
+     # Display the VirtualBox GUI when booting the machine
+     vb.gui = false
+  
+     # Customize the amount of memory on the VM:
+     vb.memory = "4096"
+	 vb.cpus = 1
+   end
+   controlnode.vm.box = "centos8.5-server-64bit"
+   controlnode.vm.hostname = "controlnode"
+   controlnode.vm.network "public_network", bridge: 'Realtek PCIe GbE Family Controller', ip: "192.168.0.110"
+   controlnode.vm.synced_folder "./ansible","/home/vagrant/ansible"
+   controlnode.vm.provision "shell", privileged: true, run: "always", inline: <<-SHELL
+     sed -i 's/ChallengeResponseAuthentication no/ChallengeResponseAuthentication yes/#g' /etc/ssh/sshd_config
+     systemctl restart sshd
+     yum -y update
+     yum -y install ansible htop mc
+     echo "[defaults]" > /etc/ansible/ansible.cfg
+     echo "host_key_checking = False" >> /etc/ansible/ansible.cfg
+     ansible-galaxy collection install community.mysql
+     ansible-galaxy collection install community.zabbix
+   SHELL
+ end
+ # Every Vagrant development environment requires a box. You can search for
+ # boxes at https://vagrantcloud.com/search.
+ config.vm.define "server" do |server|
+  server.vm.provider "virtualbox" do |vb|
+     # Display the VirtualBox GUI when booting the machine
+     vb.gui = false
+  
+     # Customize the amount of memory on the VM:
+     vb.memory = "4096"
+	 vb.cpus = 1
+   end
+  server.vm.box = "centos8.5-server-64bit"
+  server.vm.hostname = "server"
+  server.vm.network "public_network", bridge: 'Realtek PCIe GbE Family Controller', ip: "192.168.0.111"
+  server.vm.provision "shell", privileged: true, run: "always", inline: <<-SHELL
+    sed -i 's/ChallengeResponseAuthentication no/ChallengeResponseAuthentication yes/#g' /etc/ssh/sshd_config
+    systemctl restart sshd
+    sed -i 's/SELINUX=permissive/SELINUX=disabled/#g' /etc/selinux/config
+    sed -i 's/SELINUX=enforcing/SELINUX=disabled/#g' /etc/selinux/config
+    setenforce 0
+    mkdir -p /var/www/html
+    yum -y update
+    yum -y install htop mc 
+  SHELL
+ end
+end

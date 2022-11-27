@@ -1,0 +1,6 @@
+---
+- name: "Apply http service"
+  ansible.builtin.shell: firewall-cmd --permanent --add-service=http
+- name: "Reload rules"
+  ansible.builtin.shell: firewall-cmd --reload
+...

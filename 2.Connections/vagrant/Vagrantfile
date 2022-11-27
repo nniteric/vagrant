@@ -1,0 +1,81 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+
+  config.vm.provision "file", source: "files/vagrant_test.pub", destination: "/home/vagrant/.ssh/"
+
+  config.vm.define "controlnode" do |controlnode|
+    #controlnode.vm.box = "ubuntu2204-server-64bit"
+    controlnode.vm.box = "ubuntu/focal64"
+    controlnode.vm.hostname = "controlnode"
+    controlnode.vm.network "public_network", bridge: 'Realtek PCIe GbE Family Controller', ip: "192.168.0.110"
+    controlnode.vm.synced_folder "./ansible","/home/vagrant/ansible"
+    controlnode.vm.provision "file", source: "files/vagrant_test", destination: "/home/vagrant/.ssh/"
+    controlnode.vm.provision "shell", inline: <<-SHELL
+      sed -i 's/ChallengeResponseAuthentication no/ChallengeResponseAuthentication yes/#g' /etc/ssh/sshd_config
+      service ssh restart
+      chmod -R 775 /home/vagrant/ansible
+      apt install -y apt-transport-https ca-certificates curl software-properties-common
+      curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+      apt update -y 
+      apt-cache policy docker-ce
+      sudo add-apt-repository ppa:ansible/ansible
+      sudo apt update -y && sudo apt -y install sshpass ansible docker-ce docker-compose
+      chmod 600 /home/vagrant/.ssh/vagrant_test
+      chmod 644 /home/vagrant/.ssh/vagrant_test.pub
+      usermod -aG docker vagrant
+      ansible-galaxy collection install community.mysql
+    SHELL
+  end
+
+  config.vm.define "server" do |server|
+    #server.vm.box = "ubuntu2204-server-64bit"
+    server.vm.box = "ubuntu/focal64"
+    server.vm.hostname = "ubuntu"
+    server.vbguest.auto_update = true
+    server.vm.network "public_network", bridge: 'Realtek PCIe GbE Family Controller', ip: "192.168.0.111"
+    server.vm.provision "shell", privileged: true, run: "always", inline: <<-SHELL
+      chmod 644 /home/vagrant/.ssh/vagrant_test.pub 
+      cat /home/vagrant/.ssh/vagrant_test.pub >> /home/vagrant/.ssh/authorized_keys
+    SHELL
+  end
+
+  config.vm.define "server_no_python" do |server_no_python|
+    #server_no_python.vm.box = "ubuntu2204-server-64bit"
+    server_no_python.vm.box = "ubuntu/focal64"
+    server_no_python.vm.hostname = "no-python"
+    server_no_python.vbguest.auto_update = true
+    server_no_python.vm.network "public_network", bridge: 'Realtek PCIe GbE Family Controller', ip: "192.168.0.112"
+    server_no_python.vm.provision "shell", privileged: true, run: "always", inline: <<-SHELL
+      chmod 644 /home/vagrant/.ssh/vagrant_test.pub
+      cat /home/vagrant/.ssh/vagrant_test.pub >> /home/vagrant/.ssh/authorized_keys
+      sudo apt -y remove python3 && sudo apt -y autoremove
+    SHELL
+  end
+
+  config.vm.define "server_centos" do |server_centos|
+    #server_centos.vm.box = "centos8.5-server-64bit"
+    server_centos.vm.box = "centos/7"
+    server_centos.vm.hostname = "centos"
+    server_centos.vbguest.auto_update = false
+    server_centos.vm.network "public_network", bridge: 'Realtek PCIe GbE Family Controller', ip: "192.168.0.113"
+    server_centos.vm.provision "shell", privileged: true, run: "always", inline: <<-SHELL
+      chmod 644 /home/vagrant/.ssh/vagrant_test.pub
+      cat /home/vagrant/.ssh/vagrant_test.pub >> /home/vagrant/.ssh/authorized_keys
+    SHELL
+  end
+
+  config.vm.define "server_centos_python" do |server_centos_python|
+    #server_centos_python.vm.box = "centos8.5-server-64bit"
+    server_centos_python.vm.box = "centos/7"
+    server_centos_python.vm.hostname = "centos"
+    server_centos_python.vbguest.auto_update = false
+    server_centos_python.vm.network "public_network", bridge: 'Realtek PCIe GbE Family Controller', ip: "192.168.0.115"
+    server_centos_python.vm.provision "shell", privileged: true, run: "always", inline: <<-SHELL
+      chmod 644 /home/vagrant/.ssh/vagrant_test.pub
+      cat /home/vagrant/.ssh/vagrant_test.pub >> /home/vagrant/.ssh/authorized_keys
+    SHELL
+  end
+end

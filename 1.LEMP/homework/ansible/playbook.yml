@@ -1,0 +1,19 @@
+---
+- hosts: "all"
+  become: true
+
+  roles:
+    - firewall
+    - nginx
+    - mysql
+    - php
+  tasks:
+    - name: "Create /etc/systemd/system/nginx.service.d/override.conf file" 
+      ansible.builtin.shell: printf "[Service]\nExecStartPost=/bin/sleep 0.1\n" > /etc/systemd/system/nginx.service.d/override.conf
+    
+    - name: "Reload nginx"
+      ansible.builtin.service:
+        name: "nginx"
+        state: "reloaded"
+        enabled: true
+...

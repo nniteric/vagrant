@@ -1,0 +1,19 @@
+---
+#Install PHP
+- name: "Install php-fpm via yum"
+  ansible.builtin.yum:
+    name: "{{ item }}"
+    state: "latest"
+    update_cache: true
+  with_items:
+    - "php-fpm.x86_64"
+    - "php-mysqlnd.x86_64"
+    
+- name: "Copy php files to /var/www"
+  ansible.builtin.copy:
+    src: "files/test-php/php_test"
+    dest: "/var/www/"
+    owner: "vagrant"
+    group: "vagrant"
+    mode: "0644"
+...
