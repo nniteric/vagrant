@@ -1,1 +1,0 @@
-{"rsync":{"/vagrant":{"type":"rsync","guestpath":"/vagrant","hostpath":"/home/geekmaster/vagrant/2.Connections/vagrant","disabled":false,"__vagrantfile":true,"owner":"vagrant","group":"vagrant"}}}
